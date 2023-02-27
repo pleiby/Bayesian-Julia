@@ -87,6 +87,8 @@
 using CairoMakie
 using Distributions
 
+OUTPUTPATH = joinpath(pwd(), "_literate")
+
 dice = DiscreteUniform(1, 6)
 f, ax, b = barplot(
     dice;
@@ -95,7 +97,7 @@ f, ax, b = barplot(
 )
 vlines!(ax, [mean(dice)]; linewidth=5, color=:red, label=L"E(\theta)")
 axislegend(ax)
-save(joinpath(@OUTPUT, "dice.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "dice.svg"), f); # hide
 
 # \fig{dice}
 # \center{*A "fair" six-sided Dice: Discrete Uniform between 1 and 6*} \\
@@ -221,7 +223,7 @@ plt2 = data(chain) * chain_mapping * density()
 f = Figure(; resolution=(800, 600))
 draw!(f[1, 1], plt1)
 draw!(f[1, 2], plt2; axis=(; ylabel="density"))
-save(joinpath(@OUTPUT, "chain.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "chain.svg"), f); # hide
 
 # \fig{chain}
 # \center{*Visualization of a MCMC Chain simulation*} \\
