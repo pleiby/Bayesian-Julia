@@ -179,6 +179,25 @@ where:
 - Hardesty (2015). "Probabilistic programming does in 50 lines of code what used to take thousands". phys.org. April 13, 2015. Retrieved April 13, 2015. https://phys.org/news/2015-04-probabilistic-lines-code-thousands.html
 - Hoffman, M. D., & Gelman, A. (2011). The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo. Journal of Machine Learning Research, 15(1), 1593–1623. Retrieved from http://arxiv.org/abs/1111.4246
 
+## Why Bayes Theorem is Important for Inference
+
+$$P(A \land B) = P(B \land A)$$
+$$P(A|B) P(B) = P(A \land B) = P(B \land A) = P(B|A) P(A)$$
+hence
+$$P(B|A) = \frac{P(A|B) P(B)}{P(A)}$$
+
+Importantly, Bayes Theorem indicates that we can invert the conditional order between
+Hypothesis and Data:
+$$P(Hypothesis|Data) = \frac{P(Data|Hypothesis) P(Hypothesis)}{P(Data)}$$
+or
+$$Posterior_{\tilde \theta} = \frac{Likelihood_{y|X,\theta} Prior_{\tilde \theta}}{Normalization_{P(X, y|X)}}$$
+
+#### In contrast, **p-value**:
+P-value is probability of observing data *producing test results D at least as extreme as that observed*,
+given that the null-hypothesis $H_0$ is true:
+$$\text{P-value} = P(D | H_0)$$
+
+
 ## How to use Turing
 - Turing.jl [Ge et al. 2018] provides a Domain Specific Language (DSL) for Probabilistic Programming:
     - probabilistic programming languages (PPLs) (Hardesty, 2015) allow specification of probabilistic models and inference for these models is performed automatically.
