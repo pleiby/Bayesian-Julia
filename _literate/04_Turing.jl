@@ -88,6 +88,7 @@ using CairoMakie
 using Distributions
 
 OUTPUTPATH = joinpath(pwd(), "_literate")
+save_plots = false
 
 dice = DiscreteUniform(1, 6)
 f, ax, b = barplot(
@@ -97,7 +98,11 @@ f, ax, b = barplot(
 )
 vlines!(ax, [mean(dice)]; linewidth=5, color=:red, label=L"E(\theta)")
 axislegend(ax)
-save(joinpath(OUTPUTPATH, "dice.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "dice.svg"), f); # hide
+else
+    f
+end
 
 # \fig{dice}
 # \center{*A "fair" six-sided Dice: Discrete Uniform between 1 and 6*} \\
@@ -133,7 +138,7 @@ mean(Dirichlet(6, 1))
 
 # And, indeed, it sums up to one:
 
-sum(mean(Dirichlet(6, 1)))
+sum(mean(Dirichlet(6, 1))) ≈ 1.0
 
 # Also, since the outcome of a [Categorical distribution](https://en.wikipedia.org/wiki/Categorical_distribution) is an integer
 # and `y` is a $N$-dimensional vector of integers we need to apply some sort of broadcasting here.
@@ -157,6 +162,7 @@ first(my_data, 5)
 
 # Once the model is specified we instantiate the model with the single parameter `y` as the simulated `my_data`:
 
+# Turing models (instantiators) take observed sample data as an argument.
 model = dice_throw(my_data);
 
 # Next, we call Turing's `sample()` function that takes a Turing model as a first argument, along with a
@@ -166,33 +172,49 @@ model = dice_throw(my_data);
 
 chain = sample(model, NUTS(), 1_000);
 
-# Now let's inspect the chain. We can do that with the function `describe()` that will return a 2-element vector of
-# `ChainDataFrame` (this is the type defined by `MCMCChains.jl` to store Markov chain's information regarding the inferred
-# parameters). The first `ChainDataFrame` has information regarding the parameters' summary statistics (`mean`, `std`, `r_hat`, ...)
-# and the second is the parameters' quantiles. Since `describe(chain)` returns a 2-element vector, I will assign the output to two variables:
+# Note that the MC Markov Chain (type `Chain`) is a sequential sample in the (6-dim) parameter space.
+#  Parameters in this example are each the probability of one of the discrete outcome events.
+# Is is a 3-dim array-like object, with dimensions SampleSize X NumParams*3 x 1
+size(chain)
+
+# Now let's inspect the chain. We can do that with the function `describe()`
+#  that will return a 2-element vector of `ChainDataFrame` type
+# (this is the type defined by `MCMCChains.jl`
+# to store Markov chain's information regarding the inferred parameters).
+# The first `ChainDataFrame` has information regarding the parameters' summary statistics
+#   (`mean`, `std`, `r_hat`, ...)
+# and the second is the parameters' quantiles.
+# Since `describe(chain)` returns a 2-element vector, I will assign the output to two variables:
 
 summaries, quantiles = describe(chain);
 
-# We won't be focusing on quantiles, so let's put it aside for now. Let's then take a look at the parameters' summary statistics:
+# We won't be focusing on quantiles, so let's put it aside for now.
+# Let's then take a look at the parameters' summary statistics:
 
+# the MCMC chain summary has one row per uncertain model parameter, 
+#   each row containing a range of (8) posterior distribuion statistics & diagnostics
 summaries
 
 # Here `p` is a 6-dimensional vector of probabilities, which each one associated with a mutually exclusive outcome of a six-sided
 # dice throw. As we expected, the probabilities are almost equal to $\frac{1}{6}$, like a "fair" six-sided dice that we simulated
-# data from (sampling from `DiscreteUniform(1, 6)`). Indeed, just for a sanity check, the mean of the estimates of `p` sums up to 1:
+# data from (sampling from `DiscreteUniform(1, 6)`).
+# Indeed, just for a sanity check, the mean of the estimates of `p` sums up to 1:
 
 sum(summaries[:, :mean])
 
 # In the future if you have some crazy huge models and you just want a **subset** of parameters from your chains?
 # Just do `group(chain, :parameter)` or index with `chain[:, 1:6, :]`:
+# `summarystats(chain)` returns the same summary table as the first returned result of `describe(chain)`.
+# We can report summarystats for a slice of parameters or iterations from the chain.
 
 summarystats(chain[:, 1:3, :])
 
-# or `chain[[:parameters,...]]`:
+# or can produce summary stats for particular parameters by name `chain[[:parameters,...]]`:
 
 summarystats(chain[[:var"p[1]", :var"p[2]"]])
 
-# And, finally let's compute the expectation of the estimated six-sided dice, $E(\tilde{X})$, using the standard expectation
+# And, finally let's compute the expectation of the estimated six-sided dice,
+#  $E(\tilde{X})$, using the standard expectation
 # definition of expectation for a discrete random variable:
 
 # $$ E(X) = \sum_{x \in X} x \cdot P(x) $$
@@ -208,13 +230,15 @@ sum([idx * i for (i, idx) in enumerate(summaries[:, :mean])])
 
 typeof(chain)
 
-# Since `Chains` is a [`Tables.jl`-compatible](https://github.com/JuliaData/Tables.jl/blob/main/INTEGRATIONS.md) data structure,
+# Since `Chains` is a [`Tables.jl`-compatible](https://github.com/JuliaData/Tables.jl/blob/main/INTEGRATIONS.md)
+#  data structure,
 # we can use all of the plotting capabilities from [`AlgebraOfGraphics.jl`](https://aog.makie.org/stable/).
 
 using AlgebraOfGraphics
 using AlgebraOfGraphics: density
 #exclude additional information such as log probability
 params = names(chain, :parameters)
+
 chain_mapping =
     mapping(params .=> "sample value") *
     mapping(; color=:chain => nonnumeric, row=dims(1) => renamer(params))
@@ -223,7 +247,11 @@ plt2 = data(chain) * chain_mapping * density()
 f = Figure(; resolution=(800, 600))
 draw!(f[1, 1], plt1)
 draw!(f[1, 2], plt2; axis=(; ylabel="density"))
-save(joinpath(OUTPUTPATH, "chain.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "chain.svg"), f); # hide
+else # display locally
+    f
+end
 
 # \fig{chain}
 # \center{*Visualization of a MCMC Chain simulation*} \\
@@ -235,8 +263,10 @@ save(joinpath(OUTPUTPATH, "chain.svg"), f); # hide
 
 # Predictive checks are a great way to **validate a model**.
 # The idea is to **generate data from the model** using **parameters from draws from the prior or posterior**.
-# **Prior predictive check** is when we simulate data using model parameter values drawn fom the **prior** distribution,
-# and **posterior predictive check** is is when we simulate data using model parameter values drawn fom the **posterior**
+# **Prior predictive check** is when we simulate data using model
+# parameter values drawn fom the **prior** distribution,
+# and **posterior predictive check** is is when we simulate data
+# using model parameter values drawn fom the **posterior**
 # distribution.
 
 # The workflow we do when specifying and sampling Bayesian models is not linear or acyclic (Gelman et al., 2020). This means
@@ -247,27 +277,38 @@ save(joinpath(OUTPUTPATH, "chain.svg"), f); # hide
 #
 # \center{*Bayesian Workflow. Adapted from Gelman et al. (2020)*} \\
 
-# This is quite easy in Turing. Our six-sided dice model already has a **posterior distribution** which is the object `chain`.
-# We need to create a **prior distribution** for our model. To accomplish this, instead of supplying a MCMC sampler like
+# This is quite easy in Turing. Our six-sided dice model already
+# has a **posterior distribution** which is the object `chain`.
+# We need to create a **prior distribution** for our model.
+# To accomplish this, instead of supplying a MCMC sampler like
 # `NUTS()`, we supply the "sampler" `Prior()` inside Turing's `sample()` function:
 
 prior_chain = sample(model, Prior(), 2_000);
 
 # Now we can perform predictive checks using both the prior (`prior_chain`) or posterior (`chain`) distributions.
-# To draw from the prior and posterior predictive distributions we instantiate a "predictive model", *i.e.* a Turing model but with the observations set to `missing`, and then calling `predict()` on the predictive model and the previously drawn samples.
+# **To draw from the prior and posterior predictive distributions we
+# instantiate a "predictive model", *i.e.* a Turing model but with the
+# observations set to `missing`, and then calling `predict()` on the
+# predictive model and the previously drawn samples.**
 # First let's do the *prior* predictive check:
 
 missing_data = similar(my_data, Missing) # vector of `missing`
-model_missing = dice_throw(missing_data) # instantiate the "predictive model
+model_missing = dice_throw(missing_data) # instantiate the "predictive model" w/o any obs `y`
 prior_check = predict(model_missing, prior_chain);
 
-# Here we are creating a `missing_data` object which is a `Vector` of the same length as the `my_data` and populated with type `missing` as values.
+# Here we are creating a `missing_data` object which is a `Vector`
+# of the same length as the `my_data` and populated with type `missing` as values.
 # We then instantiate a new `dice_throw` model with the `missing_data` vector as the `y` argument.
-# Finally, we call `predict()` on the predictive model and the previously drawn samples, which in our case are the samples from the prior distribution (`prior_chain`).
+# Finally, we call `predict()` on the predictive model and the previously drawn samples,
+# which in our case are the samples from the prior distribution (`prior_chain`).
 
 # Note that `predict()` returns a `Chains` object from `MCMCChains.jl`:
 
 typeof(prior_check)
+
+# Its dimensions (`size`) reflect that we are simulating y data from parammeter priors,
+# rather than parameter (posteriors) from the param priors and obs y data.
+size(prior_check)
 
 # And we can call `summarystats()`:
 
@@ -276,16 +317,21 @@ summarystats(prior_check[:, 1:5, :]) # just the first 5 prior samples
 # We can do the same with `chain` for a *posterior* predictive check:
 
 posterior_check = predict(model_missing, chain);
+size(posterior_check)
+
 summarystats(posterior_check[:, 1:5, :]) # just the first 5 posterior samples
 
 # ## Conclusion
 
 # This is the basic overview of Turing usage. I hope that I could show you how simple and intuitive is to
-# specify probabilistic models using Turing. First, specify a **model** with the macro `@model`, then **sample from it** by
-# specifying the **data**, **sampler** and **number of interactions**. All **probabilistic parameters** (the ones that you've specified
-# using `~`) will be **inferred** with a full **posterior density**. Finally, you inspect the **parameters' statistics** like
-# **mean** and **standard deviation**, along with **convergence diagnostics** like `r_hat`. Conveniently, you can **plot** stuff
-# easily if you want to. You can also do **predictive checks** using either the **posterior** or **prior** model's distributions.
+# specify probabilistic models using Turing. 
+
+# - First, specify a **model** with the macro `@model`, then 
+# - **sample from it** by specifying the **data**, **sampler** and **number of interactions**. 
+# - All **probabilistic parameters** (the ones that you've specified using `~`) will be **inferred** with a full **posterior density**. 
+# - Finally, inspect the **parameters' statistics** like **mean** and **standard deviation**, along with **convergence diagnostics** like `r_hat`. 
+#     - Conveniently, you can **plot** stuff easily if you want to. 
+# - You can also do **predictive checks** using either the **posterior** or **prior** model's distributions.
 
 # ## Footnotes
 #
