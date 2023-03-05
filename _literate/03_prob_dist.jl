@@ -44,6 +44,8 @@
 using CairoMakie
 using Distributions
 
+OUTPUTPATH = joinpath(pwd(), "_literate")
+
 f, ax, b = barplot(
     DiscreteUniform(1, 6);
     axis=(;
@@ -54,7 +56,7 @@ f, ax, b = barplot(
         limits=(nothing, nothing, 0, 0.3),
     ),
 )
-save(joinpath(@OUTPUT, "discrete_uniform.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "discrete_uniform.svg"), f); # hide
 
 # \fig{discrete_uniform}
 # \center{*Discrete Uniform between 1 and 6*} \\
@@ -88,7 +90,7 @@ ax2 = Axis(
 )
 barplot!(ax2, Bernoulli(0.2); width=0.3)
 linkaxes!(ax1, ax2)
-save(joinpath(@OUTPUT, "bernoulli.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "bernoulli.svg"), f); # hide
 
 # \fig{bernoulli}
 # \center{*Bernoulli with $p = \{ 0.5, 0.2 \}$*} \\
@@ -112,7 +114,7 @@ f, ax1, b = barplot(
 ax2 = Axis(f[1, 2]; title=L"p=0.2", xlabel=L"\theta")
 barplot!(ax2, Binomial(5, 0.2))
 linkaxes!(ax1, ax2)
-save(joinpath(@OUTPUT, "binomial.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "binomial.svg"), f); # hide
 # \fig{binomial}
 # \center{*Binomial with $n=5$ and $p = \{ 0.5, 0.2 \}$*} \\
 
@@ -134,7 +136,7 @@ f, ax1, b = barplot(
 ax2 = Axis(f[1, 2]; title=L"\lambda=4", xlabel=L"\theta")
 barplot!(ax2, Poisson(4))
 linkaxes!(ax1, ax2)
-save(joinpath(@OUTPUT, "poisson.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "poisson.svg"), f); # hide
 
 # \fig{poisson}
 # \center{*Poisson with $\lambda = \{ 1, 4 \}$*} \\
@@ -163,7 +165,7 @@ f, ax1, b = barplot(
 ax2 = Axis(f[1, 2]; title=L"k=2", xlabel=L"\theta")
 barplot!(ax2, NegativeBinomial(2, 0.5))
 linkaxes!(ax1, ax2)
-save(joinpath(@OUTPUT, "negbinomial.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "negbinomial.svg"), f); # hide
 
 # \fig{negbinomial}
 # \center{*Negative Binomial with $p=0.5$ and $r = \{ 1, 2 \}$*} \\
@@ -204,7 +206,7 @@ f, ax, l = lines(
 lines!(ax, Normal(0, 0.5); label=L"\sigma=0.5", linewidth=5)
 lines!(ax, Normal(0, 2); label=L"\sigma=2", linewidth=5)
 axislegend(ax)
-save(joinpath(@OUTPUT, "normal.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "normal.svg"), f); # hide
 
 # \fig{normal}
 # \center{*Normal with $\mu=0$ and $\sigma = \{ 1, 0.5, 2 \}$*} \\
@@ -236,7 +238,7 @@ f, ax, l = lines(
 lines!(ax, LogNormal(0, 0.25); label=L"\sigma=0.25", linewidth=5)
 lines!(ax, LogNormal(0, 0.5); label=L"\sigma=0.5", linewidth=5)
 axislegend(ax)
-save(joinpath(@OUTPUT, "lognormal.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "lognormal.svg"), f); # hide
 
 # \fig{lognormal}
 # \center{*Log-Normal with $\mu=0$ and $\sigma = \{ 1, 0.25, 0.5 \}$*} \\
@@ -261,7 +263,7 @@ f, ax, l = lines(
 lines!(ax, Exponential(0.5); label=L"\lambda=0.5", linewidth=5)
 lines!(ax, Exponential(1.5); label=L"\lambda=2", linewidth=5)
 axislegend(ax)
-save(joinpath(@OUTPUT, "exponential.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "exponential.svg"), f); # hide
 
 # \fig{exponential}
 # \center{*Exponential with $\lambda = \{ 1, 0.5, 1.5 \}$*} \\
@@ -294,7 +296,7 @@ f, ax, l = lines(
 lines!(ax, TDist(8); label=L"\nu=8", linewidth=5)
 lines!(ax, TDist(30); label=L"\nu=30", linewidth=5)
 axislegend(ax)
-save(joinpath(@OUTPUT, "tdist.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "tdist.svg"), f); # hide
 
 # \fig{tdist}
 # \center{*Student-$t$ with $\nu = \{ 2, 8, 30 \}$*} \\
@@ -321,7 +323,7 @@ f, ax, l = lines(
 lines!(ax, Beta(3, 2); label=L"a=3, b=2", linewidth=5)
 lines!(ax, Beta(2, 3); label=L"a=2, b=3", linewidth=5)
 axislegend(ax)
-save(joinpath(@OUTPUT, "beta.svg"), f); # hide
+save(joinpath(OUTPUTPATH, "beta.svg"), f); # hide
 
 # \fig{beta}
 # \center{*Beta with different values of $a$ and $b$*} \\
