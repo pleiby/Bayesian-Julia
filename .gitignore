@@ -24,6 +24,7 @@ node_modules/
 *.xdv
 *-converted-to.*
 # these rules might exclude image files for figures etc.
+*.svg
 # *.ps
 # *.eps
 # *.pdf
