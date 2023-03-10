@@ -122,6 +122,9 @@ using CairoMakie
 using Distributions
 using Random
 
+OUTPUTPATH = joinpath(pwd(), "_literate")
+save_plots = false
+
 Random.seed!(123);
 
 # Let's start with a toy problem of a multivariate normal distribution of $X$ and $Y$, where
@@ -181,7 +184,7 @@ const N = 100_000
 const μ = [0, 0]
 const Σ = [1 0.8; 0.8 1]
 
-const mvnormal = MvNormal(μ, Σ)
+const mvnormal = MvNormal(μ, Σ) # creates alias
 
 # In the figure below it is possible to see a contour plot of the PDF of a multivariate normal distribution composed of two normal
 # variables $X$ and $Y$, both with mean 0 and standard deviation 1.
@@ -189,10 +192,17 @@ const mvnormal = MvNormal(μ, Σ)
 
 x = -3:0.01:3
 y = -3:0.01:3
+# `pdf(d,x)` evals prob density d at x
 dens_mvnormal = [pdf(mvnormal, [i, j]) for i in x, j in y]
+
 f, ax, c = contourf(x, y, dens_mvnormal; axis=(; xlabel=L"X", ylabel=L"Y"))
 Colorbar(f[1, 2], c)
-save(joinpath(@OUTPUT, "countour_mvnormal.svg"), f); # hide
+if (save_plots)
+    # save(joinpath(@OUTPUT, "countour_mvnormal.svg"), f); # hide
+    save(joinpath(OUTPUTPATH, "countour_mvnormal.svg"), f) # hide
+else
+    f
+end
 
 # \fig{countour_mvnormal}
 # \center{*Countour Plot of the PDF of a Multivariate Normal Distribution*} \\
@@ -205,7 +215,11 @@ f, ax, s = surface(
     dens_mvnormal;
     axis=(type=Axis3, xlabel=L"X", ylabel=L"Y", zlabel="PDF", azimuth=pi / 8),
 )
-save(joinpath(@OUTPUT, "surface_mvnormal.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "surface_mvnormal.svg"), f) # hide
+else
+    f
+end
 
 # \fig{surface_mvnormal}
 # \center{*Surface Plot of the PDF of a Multivariate Normal Distribution*} \\
@@ -478,7 +492,7 @@ f, ax, l = lines(
     axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
 )
 axislegend(ax)
-record(f, joinpath(@OUTPUT, "met_anim.gif"); framerate=5) do frame
+record(f, joinpath(OUTPUTPATH, "met_anim.gif"); framerate=5) do frame
     for i in 1:100
         scatter!(ax, (X_met[i, 1], X_met[i, 2]); color=(:red, 0.5))
         linesegments!(X_met[i:(i + 1), 1], X_met[i:(i + 1), 2]; color=(:green, 0.5))
@@ -506,7 +520,11 @@ scatter!(
     X_met[warmup:(warmup + 1_000), 2];
     color=(:red, 0.3),
 )
-save(joinpath(@OUTPUT, "met_first1000.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "met_first1000.svg"), f) # hide
+else
+    f
+end
 
 # \fig{met_first1000}
 # \center{*First 1,000 Samples Generated from the Metropolis Algorithm after warm-up*} \\
@@ -521,7 +539,12 @@ f, ax, l = lines(
 )
 axislegend(ax)
 scatter!(ax, X_met[warmup:end, 1], X_met[warmup:end, 2]; color=(:red, 0.3))
-save(joinpath(@OUTPUT, "met_all.svg"), f); # hide
+
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "met_all.svg"), f) # hide
+else
+    f
+end
 
 # \fig{met_all}
 # \center{*All 9,000 Samples Generated from the Metropolis Algorithm after warm-up*} \\
@@ -598,8 +621,8 @@ save(joinpath(@OUTPUT, "met_all.svg"), f); # hide
 
 # $$
 # \begin{aligned}
-# \beta &= \rho \cdot \frac{\sigma_Y}{\sigma_X} = \rho \\
-# \lambda &= \rho \cdot \frac{\sigma_X}{\sigma_Y} = \rho \\
+# \beta &= \rho \cdot \frac{\sigma_Y}{\sigma_X} \\
+# \lambda &= \rho \cdot \frac{\sigma_X}{\sigma_Y} \\
 # \sigma_{YX} &= 1 - \rho^2\\
 # \sigma_{XY} &= 1 - \rho^2\\
 # \theta_1 &\sim \text{Normal} \bigg( \mu_X + \lambda \cdot (y^* - \mu_Y), \sigma_{XY} \bigg) \\
@@ -623,7 +646,7 @@ function gibbs(
     draws = Matrix{Float64}(undef, S, 2)
     x = start_x
     y = start_y
-    β = ρ * σ_y / σ_x
+    β = ρ * σ_y / σ_x # needed for correlation of sampled parameters
     λ = ρ * σ_x / σ_y
     sqrt1mrho2 = sqrt(1 - ρ^2)
     σ_YX = σ_y * sqrt1mrho2
@@ -643,8 +666,9 @@ end
 # Generally a Gibbs sampler is not implemented in this way. Here I coded the Gibbs algorithm so that it samples a parameter for each iteration.
 # To be more computationally efficient we would sample all parameters are on each iteration. I did it on purpose because I want
 # to show in the animations the real trajectory of the Gibbs sampler in the sample space (vertical and horizontal, not diagonal).
-# So to remedy this I will provide `gibbs()` double the ammount of `S` (20,000 in total). Also take notice that we are now proposing
-# new parameters' values conditioned on other parameters, so there is not an acceptance/rejection rule here.
+# So to remedy this I will provide `gibbs()` double the ammount of `S` (20,000 in total). 
+# Also take notice that **for Gibbs we are now proposing
+# new parameters' values conditioned on other parameters, so there is not an acceptance/rejection rule here.**
 
 X_gibbs = gibbs(S * 2, ρ);
 
@@ -691,7 +715,7 @@ f, ax, l = lines(
     axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
 )
 axislegend(ax)
-record(f, joinpath(@OUTPUT, "gibbs_anim.gif"); framerate=5) do frame
+record(f, joinpath(OUTPUTPATH, "gibbs_anim.gif"); framerate=5) do frame
     for i in 1:200
         scatter!(ax, (X_gibbs[i, 1], X_gibbs[i, 2]); color=(:red, 0.5))
         linesegments!(X_gibbs[i:(i + 1), 1], X_gibbs[i:(i + 1), 2]; color=(:green, 0.5))
@@ -717,7 +741,11 @@ scatter!(
     X_gibbs[(2 * warmup):(2 * warmup + 1_000), 2];
     color=(:red, 0.3),
 )
-save(joinpath(@OUTPUT, "gibbs_first1000.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "gibbs_first1000.svg"), f) # hide
+else
+    f
+end
 
 # \fig{gibbs_first1000}
 # \center{*First 1,000 Samples Generated from the Gibbs Algorithm after warm-up*} \\
@@ -732,7 +760,11 @@ f, ax, l = lines(
 )
 axislegend(ax)
 scatter!(ax, X_gibbs[(2 * warmup):end, 1], X_gibbs[(2 * warmup):end, 2]; color=(:red, 0.3))
-save(joinpath(@OUTPUT, "gibbs_all.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "gibbs_all.svg"), f) # hide
+else
+    f
+end
 
 # \fig{gibbs_all}
 # \center{*All 9,000 Samples Generated from the Gibbs Algorithm after warm-up*} \\
@@ -786,7 +818,7 @@ f, ax, l = lines(
     axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
 )
 axislegend(ax)
-record(f, joinpath(@OUTPUT, "parallel_met.gif"); framerate=5) do frame
+record(f, joinpath(OUTPUTPATH, "parallel_met.gif"); framerate=5) do frame
     for i in 1:99
         scatter!(ax, (X_met_1[i, 1], X_met_1[i, 2]); color=(logocolors.blue, 0.5))
         linesegments!(
@@ -836,7 +868,7 @@ f, ax, l = lines(
     axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
 )
 axislegend(ax)
-record(f, joinpath(@OUTPUT, "parallel_gibbs.gif"); framerate=5) do frame
+record(f, joinpath(OUTPUTPATH, "parallel_gibbs.gif"); framerate=5) do frame
     for i in 1:199
         scatter!(ax, (X_gibbs_1[i, 1], X_gibbs_1[i, 2]); color=(logocolors.blue, 0.5))
         linesegments!(
@@ -1069,7 +1101,7 @@ f, ax, l = lines(
     axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
 )
 axislegend(ax)
-record(f, joinpath(@OUTPUT, "hmc_anim.gif"); framerate=5) do frame
+record(f, joinpath(OUTPUTPATH, "hmc_anim.gif"); framerate=5) do frame
     for i in 1:100
         scatter!(ax, (X_hmc[i, 1], X_hmc[i, 2]); color=(:red, 0.5))
         linesegments!(X_hmc[i:(i + 1), 1], X_hmc[i:(i + 1), 2]; color=(:green, 0.5))
@@ -1095,7 +1127,11 @@ scatter!(
     X_hmc[warmup:(warmup + 1_000), 2];
     color=(:red, 0.3),
 )
-save(joinpath(@OUTPUT, "hmc_first1000.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "hmc_first1000.svg"), f) # hide
+else
+    f
+end
 
 # \fig{hmc_first1000}
 # \center{*First 1,000 Samples Generated from the HMC Algorithm after warm-up*} \\
@@ -1110,7 +1146,11 @@ f, ax, l = lines(
 )
 axislegend(ax)
 scatter!(ax, X_hmc[warmup:end, 1], X_hmc[warmup:end, 2]; color=(:red, 0.3))
-save(joinpath(@OUTPUT, "hmc_all.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "hmc_all.svg"), f) # hide
+else
+    f
+end
 
 # \fig{hmc_all}
 # \center{*All 9,000 Samples Generated from the HMC Algorithm after warm-up*} \\
@@ -1162,7 +1202,11 @@ f, ax, s = surface(
     dens_mixture;
     axis=(type=Axis3, xlabel=L"X", ylabel=L"Y", zlabel="PDF", azimuth=pi / 4),
 )
-save(joinpath(@OUTPUT, "bimodal.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "bimodal.svg"), f) # hide
+else
+    f
+end
 
 # \fig{bimodal}
 # \center{*Multivariate Bimodal Normal*} \\
@@ -1182,7 +1226,11 @@ f, ax, s = scatter(
     color=(:steelblue, 0.3),
     axis=(; xlabel=L"X", ylabel=L"Y", limits=(-100, 100, nothing, nothing)),
 )
-save(joinpath(@OUTPUT, "funnel.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "funnel.svg"), f) # hide
+else
+    f
+end
 
 # \fig{funnel}
 # \center{*Neal's Funnel*} \\
@@ -1292,7 +1340,11 @@ chain_mapping =
 plt = data(chain) * mapping(:iteration) * chain_mapping * visual(Lines)
 f = Figure(; resolution=(1200, 900))
 draw!(f[1, 1], plt)
-save(joinpath(@OUTPUT, "traceplot_chain.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "traceplot_chain.svg"), f) # hide
+else
+    f
+end
 
 # \fig{traceplot_chain}
 # \center{*Traceplot for `chain`*} \\
@@ -1306,7 +1358,11 @@ chain_mapping =
 plt = data(bad_chain) * mapping(:iteration) * chain_mapping * visual(Lines)
 f = Figure(; resolution=(1200, 900))
 draw!(f[1, 1], plt)
-save(joinpath(@OUTPUT, "traceplot_bad_chain.svg"), f); # hide
+if (save_plots)
+    save(joinpath(OUTPUTPATH, "traceplot_bad_chain.svg"), f) # hide
+else
+    f
+end
 
 # \fig{traceplot_bad_chain}
 # \center{*Traceplot for `bad_chain`*} \\
