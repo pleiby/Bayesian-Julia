@@ -485,6 +485,24 @@ function getellipsepoints(μ, Σ; confidence=0.95)
     return getellipsepoints(cx, cy, rx, ry, θ)
 end
 
+function plot_MCMC_progress(μ, Σ, X, firstobsnum, lastobsnum; confidence_level=0.9)
+    f, ax, l = lines(
+        getellipsepoints(μ, Σ; confidence=confidence_level)...;
+        label="$(round(Int, confidence_level*100))% HPD",
+        linewidth=2,
+        axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
+    )
+    axislegend(ax)
+    scatter!(
+        ax,
+        # plot obs starting from end of warmup to specified lastobs
+        X[firstobsnum:lastobsnum, 1],
+        X[firstobsnum:lastobsnum, 2];
+        color=(:red, 0.3),
+    )
+    return (f)
+end
+
 f, ax, l = lines(
     getellipsepoints(μ, Σ; confidence=0.9)...;
     label="90% HPD",
@@ -507,19 +525,8 @@ end;
 
 const warmup = 1_000
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-scatter!(
-    ax,
-    X_met[warmup:(warmup + 1_000), 1],
-    X_met[warmup:(warmup + 1_000), 2];
-    color=(:red, 0.3),
-)
+f = plot_MCMC_progress(μ, Σ, X_met, warmup, warmup + 1000)
+
 if (save_plots)
     save(joinpath(OUTPUTPATH, "met_first1000.svg"), f) # hide
 else
@@ -531,14 +538,7 @@ end
 
 # And, finally, lets take a look in the all 9,000 samples generated after the warm-up of 1,000 iterations.
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-scatter!(ax, X_met[warmup:end, 1], X_met[warmup:end, 2]; color=(:red, 0.3))
+f = plot_MCMC_progress(μ, Σ, X_met, warmup, size(X_met)[1]) # end = size(X_met)[1]
 
 if (save_plots)
     save(joinpath(OUTPUTPATH, "met_all.svg"), f) # hide
@@ -631,8 +631,8 @@ end
 # $$
 
 function gibbs(
-    S::Int64,
-    ρ::Float64;
+    S::Int64, # steps
+    ρ::Float64; # bivariate covariance
     μ_x::Float64=0.0,
     μ_y::Float64=0.0,
     σ_x::Float64=1.0,
@@ -642,7 +642,7 @@ function gibbs(
     seed=123,
 )
     rgn = MersenneTwister(seed)
-    binormal = MvNormal([μ_x; μ_y], [σ_x ρ; ρ σ_y])
+    binormal = MvNormal([μ_x; μ_y], [σ_x ρ; ρ σ_y]) # unused
     draws = Matrix{Float64}(undef, S, 2)
     x = start_x
     y = start_y
@@ -728,19 +728,8 @@ end;
 
 # Now let's take a look how the first 1,000 simulations were, excluding 1,000 initial iterations as warm-up.
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-scatter!(
-    ax,
-    X_gibbs[(2 * warmup):(2 * warmup + 1_000), 1],
-    X_gibbs[(2 * warmup):(2 * warmup + 1_000), 2];
-    color=(:red, 0.3),
-)
+f = plot_MCMC_progress(μ, Σ, X_gibbs, 2 * warmup, (2 * warmup + 1_000)) # end = size(X_met)[1]
+
 if (save_plots)
     save(joinpath(OUTPUTPATH, "gibbs_first1000.svg"), f) # hide
 else
@@ -752,14 +741,8 @@ end
 
 # And, finally, lets take a look in the all 9,000 samples generated after the warm-up of 1,000 iterations.
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-scatter!(ax, X_gibbs[(2 * warmup):end, 1], X_gibbs[(2 * warmup):end, 2]; color=(:red, 0.3))
+f = plot_MCMC_progress(μ, Σ, X_gibbs, 2 * warmup, (size(X_gibbs)[1])) # end = size(X_met)[1]
+
 if (save_plots)
     save(joinpath(OUTPUTPATH, "gibbs_all.svg"), f) # hide
 else
@@ -905,8 +888,8 @@ end;
 # \center{*William Rowan Hamilton*} \\
 
 # The HMC is an adaptation of the Metropolis technique and employs a guided scheme for generating new proposals:
-# this improves the proposal's acceptance rate and, consequently, efficiency. More specifically, the HMC uses
-# the posterior log gradient to direct the Markov chain to regions of higher posterior density, where most samples
+# this improves the proposal's acceptance rate and, consequently, efficiency. More specifically, the **HMC uses
+# the posterior log gradient to direct the Markov chain to regions of higher posterior density,** where most samples
 # are collected. As a result, a Markov chain with the well-adjusted HMC algorithm will accept proposals at a much higher
 # rate than the traditional Metropolis algorithm (Roberts et. al, 1997).
 
@@ -920,8 +903,8 @@ end;
 # exploring the posterior's topology and tolerating complex topologies, HMC is much more efficient than Metropolis and
 # does not suffer from the Gibbs' parameter correlation problem.
 
-# For each component $\theta_j$, the HMC adds a momentum variable $\phi_j$. The subsequent density $P(\theta \mid y)$
-# is increased by an independent distribution $P(\phi)$ of the momentum, thus defining a joint distribution:
+# **For each component (parameter) $\theta_j$, the HMC adds a momentum variable $\phi_j$. The subsequent density $P(\theta \mid y)$
+# is increased by an independent distribution $P(\phi)$ of the momentum, thus defining a joint distribution**:
 
 # $$ P(\theta, \phi \mid y) = P(\phi) \cdot P(\theta \mid y) \label{hmcjoint} $$
 
@@ -989,11 +972,11 @@ end;
 
 using ForwardDiff: gradient
 function hmc(
-    S::Int64,
+    S::Int64, # steps
     width::Float64,
-    ρ::Float64;
-    L=40,
-    ϵ=0.001,
+    ρ::Float64; # bivariate covariance
+    L=40, # number of Leapfrog steps per HMC step
+    ϵ=0.001, # Leapfrog step size
     μ_x::Float64=0.0,
     μ_y::Float64=0.0,
     σ_x::Float64=1.0,
@@ -1003,31 +986,32 @@ function hmc(
     seed=123,
 )
     rgn = MersenneTwister(seed)
-    binormal = MvNormal([μ_x; μ_y], [σ_x ρ; ρ σ_y])
+    binormal = MvNormal([μ_x; μ_y], [σ_x ρ; ρ σ_y]) # θ_d, dist for vars/params θ = (x,y)
     draws = Matrix{Float64}(undef, S, 2)
     accepted = 0::Int64
     x = start_x
     y = start_y
     @inbounds draws[1, :] = [x y]
-    M = [1.0 0.0; 0.0 1.0]
-    ϕ_d = MvNormal([0.0, 0.0], M)
-    for s in 2:S
-        x_ = rand(rgn, Uniform(x - width, x + width))
+    M = [1.0 0.0; 0.0 1.0] # "Mass" matrix to represent covar of Momentum ϕ
+    ϕ_d = MvNormal([0.0, 0.0], M) # Momentum distribution P(ϕ)
+    for s in 2:S # HMC (MCMC) steps
+        x_ = rand(rgn, Uniform(x - width, x + width)) # start with random candidate uniform in box around current θ
         y_ = rand(rgn, Uniform(y - width, y + width))
+
         ϕ = rand(rgn, ϕ_d)
-        kinetic = sum(ϕ .^ 2) / 2
-        log_p = logpdf(binormal, [x, y]) - kinetic
-        ϕ += 0.5 * ϵ * gradient(x -> logpdf(binormal, x), [x_, y_])
-        for l in 1:L
+        kinetic = sum(ϕ .^ 2) / 2 # decrements logpdf of current point (x,y)
+        log_p = logpdf(binormal, [x, y]) - kinetic # negativetotalenergy = -(pot + kinetic)
+        ϕ += 0.5 * ϵ * gradient(x -> logpdf(binormal, x), [x_, y_]) # gradient of log posterior at candidate point
+        for l in 1:L # Leapfrog steps
             x_, y_ = [x_, y_] + (ϵ * M * ϕ)
             ϕ += +0.5 * ϵ * gradient(x -> logpdf(binormal, x), [x_, y_])
         end
         ϕ = -ϕ # make the proposal symmetric
-        kinetic = sum(ϕ .^ 2) / 2
-        log_p_ = logpdf(binormal, [x_, y_]) - kinetic
-        r = exp(log_p_ - log_p)
+        kinetic = sum(ϕ .^ 2) / 2 # decrements logpdf of candidate point (x_,y_)
+        log_p_ = logpdf(binormal, [x_, y_]) - kinetic # negenergy represents joint log-prob of (θ, ϕ)
+        r = exp(log_p_ - log_p) # ratio of joint probs for candidate (θ, ϕ) vs current
 
-        if r > rand(rgn, Uniform())
+        if r > rand(rgn, Uniform()) # acceptance test based on ratio of joint probs
             x = x_
             y = y_
             accepted += 1
@@ -1056,7 +1040,7 @@ gradient(x -> logpdf(mvnormal, x), [1, -1])
 # and the partial derivative of $y = -1$ with respect to our `mvnormal` distribution is `5`.
 
 # Now let's run our HMC Markov chain.
-# We are going to use $L = 40$ and (don't ask me how I found out) $\epsilon = 0.0856$:
+# We are going to use $L = 40$ and (don't ask me how I found out) $\epsilon = 0.0856$ (**Q: Choice of Leapfrog stepsize???**):
 
 X_hmc = hmc(S, width, ρ; ϵ=0.0856, L=40);
 
@@ -1083,7 +1067,7 @@ summarystats(chain_hmc)
 mean(summarystats(chain_hmc)[:, :ess]) / S
 
 # We see that a simple naïve (and not well-calibrated[^calibrated]) HMC has 70% more efficiency from both Gibbs and Metropolis.
-# ≈ 10% versus ≈ 17%. Great! 😀
+# ≈ 10% versus ≈ 17%. Great! 😀 (Q: Why is this great, but 10% is viewed pejoratively?)
 
 # #### HMC -- Visual Intuition
 
@@ -1138,14 +1122,8 @@ end
 
 # And, finally, lets take a look in the all 9,000 samples generated after the warm-up of 1,000 iterations.
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-scatter!(ax, X_hmc[warmup:end, 1], X_hmc[warmup:end, 2]; color=(:red, 0.3))
+f = plot_MCMC_progress(μ, Σ, X_hmc, warmup, (size(X_hmc)[1])) # end = size(X_met)[1]
+
 if (save_plots)
     save(joinpath(OUTPUTPATH, "hmc_all.svg"), f) # hide
 else
