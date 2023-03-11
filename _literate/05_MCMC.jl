@@ -503,20 +503,27 @@ function plot_MCMC_progress(μ, Σ, X, firstobsnum, lastobsnum; confidence_level
     return (f)
 end
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
+function plot_MCMC_animated(
+    μ, Σ, X, firstobsnum, lastobsnum, outfilename; confidence_level=0.9
 )
-axislegend(ax)
-record(f, joinpath(OUTPUTPATH, "met_anim.gif"); framerate=5) do frame
-    for i in 1:100
-        scatter!(ax, (X_met[i, 1], X_met[i, 2]); color=(:red, 0.5))
-        linesegments!(X_met[i:(i + 1), 1], X_met[i:(i + 1), 2]; color=(:green, 0.5))
-        recordframe!(frame)
+    f, ax, l = lines(
+        getellipsepoints(μ, Σ; confidence=confidence_level)...;
+        label="$(round(Int, confidence_level*100))% HPD",
+        linewidth=2,
+        axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
+    )
+    axislegend(ax)
+    record(f, joinpath(OUTPUTPATH, outfilename); framerate=5) do frame
+        for i in firstobsnum:lastobsnum
+            scatter!(ax, (X[i, 1], X[i, 2]); color=(:red, 0.5))
+            linesegments!(X[i:(i + 1), 1], X[i:(i + 1), 2]; color=(:green, 0.5))
+            recordframe!(frame)
+        end
     end
-end;
+    return (f)
+end
+
+plot_MCMC_animated(μ, Σ, X_met, 1, 100, "met_anim.gif")
 
 # \fig{met_anim}
 # \center{*Animation of the First 100 Samples Generated from the Metropolis Algorithm*} \\
@@ -708,20 +715,7 @@ summarystats(chain_gibbs)
 # Note that all proposals are accepted now, so the at each iteration we sample new parameters values.
 # The blue ellipsis represents the 90% HPD of our toy example's bivariate normal distribution.
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-record(f, joinpath(OUTPUTPATH, "gibbs_anim.gif"); framerate=5) do frame
-    for i in 1:200
-        scatter!(ax, (X_gibbs[i, 1], X_gibbs[i, 2]); color=(:red, 0.5))
-        linesegments!(X_gibbs[i:(i + 1), 1], X_gibbs[i:(i + 1), 2]; color=(:green, 0.5))
-        recordframe!(frame)
-    end
-end;
+plot_MCMC_animated(μ, Σ, X_gibbs, 1, 200, "gibbs_anim.gif")
 
 # \fig{gibbs_anim}
 # \center{*Animation of the First 100 Samples Generated from the Gibbs Algorithm*} \\
@@ -1078,39 +1072,15 @@ mean(summarystats(chain_hmc)[:, :ess]) / S
 # a very lucky random-walk Metropolis [^luckymetropolis].
 # The blue ellipsis represents the 90% HPD of our toy example's bivariate normal distribution.
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-record(f, joinpath(OUTPUTPATH, "hmc_anim.gif"); framerate=5) do frame
-    for i in 1:100
-        scatter!(ax, (X_hmc[i, 1], X_hmc[i, 2]); color=(:red, 0.5))
-        linesegments!(X_hmc[i:(i + 1), 1], X_hmc[i:(i + 1), 2]; color=(:green, 0.5))
-        recordframe!(frame)
-    end
-end;
+plot_MCMC_animated(μ, Σ, X_hmc, 1, 100, "hmc_anim.gif")
 
 # \fig{hmc_anim}
 # \center{*Animation of the First 100 Samples Generated from the HMC Algorithm*} \\
 
 # As usual, let's take a look how the first 1,000 simulations were, excluding 1,000 initial iterations as warm-up.
 
-f, ax, l = lines(
-    getellipsepoints(μ, Σ; confidence=0.9)...;
-    label="90% HPD",
-    linewidth=2,
-    axis=(; limits=(-3, 3, -3, 3), xlabel=L"\theta_1", ylabel=L"\theta_2"),
-)
-axislegend(ax)
-scatter!(
-    ax,
-    X_hmc[warmup:(warmup + 1_000), 1],
-    X_hmc[warmup:(warmup + 1_000), 2];
-    color=(:red, 0.3),
-)
+f = plot_MCMC_progress(μ, Σ, X_hmc, warmup, warmup + 1_000) # end = size(X_met)[1]
+
 if (save_plots)
     save(joinpath(OUTPUTPATH, "hmc_first1000.svg"), f) # hide
 else
