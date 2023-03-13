@@ -219,8 +219,52 @@ $$\text{P-value} = P(D | H_0)$$
     - and an efficient HMC algorithm implementation.
         - `AdvancedHMC.jl` (Xu, Ge, Tebbutt, Tarek, Trapp & Ghahramani, 2020) provides a robust, modular and efficient implementation of advanced HMC algorithms. Includes the state-of-the-art HMC algorithm "No-U-Turn Sampling" (NUTS) (Hoffman & Gelman, 2011)
 - Turing's "workflow"
-    - specify the model inside a macro @model
-    - assign variables in two ways:
-        - using `~` which means that a variable is random and follows some specified probability distribution
-        - using `=` which means that a variable value is deterministic (like the normal = assignment)
-- Turing will perform automatic inference on (the parameters of) all variables that you specify as random using `~`
+    - First, specify a **model** with the macro `@model`, then 
+        - assign variables in two ways:
+            - using `~` which means that a variable is random and follows some specified probability distribution
+            - using `=` which means that a variable value is deterministic (like the normal = assignment)
+    - instantiate the model, passing observed data (X,y) as an argument
+        - e.g. `model(XyData)`
+    - **sample from it** by specifying the **data**, **sampler** and **number of interactions**.
+        - e.g. `sample(model, NUTS(), 1_000)` 
+    - Turing will perform automatic **inference** on (the parameters of) all variables (**probabilistic parameters**) that you specify as random using `~` with a full **posterior density**. 
+    - using `summarystats()`, Inspect the **parameters' statistics** like **mean** and **standard deviation**, along with **convergence diagnostics** like `r_hat`. 
+    - Optionally can **plot** stuff easily if you want to. 
+    - Finally, do **predictive checks** using `predict` and either the **posterior** or **prior** model's distributions.
+
+- Prior and Posterior Predictive Checks
+
+
+
+
+## Markov Chain Monte Carlo (MCMC)
+
+- **Markov Chain Monte Carlo (MCMC) is a broad class of computational tools for approximating integrals and generating samples**
+- "The idea of [MCMC] is to define an ergodic Markov chain (that is to say that there is a single stationary distribution) of which the set of possible states is the sample space and the stationary distribution is the distribution to be approximated (or sampled)."
+    - thus, after the chain has converged, there is diminishing benefit to further sampling?
+    - customary to discard the first "warm up" iterations of the algorithm as they are usually not representative of the distribution to be approximated.
+    - generally recommended to discard half of the iterations (Gelman, Carlin, Stern, Dunson, Vehtari, & Rubin, 2013a) as warm-up
+
+#### Metropolis and Metropolis-Hastings
+
+- Metropolis, Rosenbluth, Rosenbluth, Teller, & Teller, 1953
+- The Metropolis algorithm uses a proposal or "jumping" distribution $J_t(θ^*)$ (where t indicates which state of the Markov chain we are in) to define next values of the distribution $P^*(θ^* ∣ data)$.
+- For the original Metropolis algorithm, this distribution must be symmetrical:
+$$J_t​(θ^*∣θ_{t−1}) = J_t​(θ_{t−1} ∣ θ^*)$$
+- In the 1970s, Wilfred Keith Hastings (Hastings, 1970) proposed a generalization of the Metropolis algorithm that does not require that the proposal distributions be symmetric. The generalization is called Metropolis-Hastings algorithm.
+- Metropolis algorithm is a random walk through the parameter $θ$'s sample space, where the probability of the Markov chain changing state (from $θ_{current}$ to $θ_{proposed}$) is defined as:
+$$P_{change} = min⁡ \left ( \frac {P(θ_{proposed})}{P(θ_{current})}, 1 \right )$$
+Pchange​=min(P(θcurrent​)P(θ_proposed​)​,1)
+
+- Define a starting point $θ_0$ of which $p(θ_0∣y)>0$, or sample it from an initial distribution $p_0(θ)$. $p_0(θ)$ can be a normal distribution or a prior distribution of $θ(p(θ))$.
+
+- For t=1,2,…:
+    - Sample a proposed $θ^*$ from a proposal distribution in time $t$, $J_t(θ^* ∣ θ_{t−1})$.
+    - Calculate the ratio of probabilities:
+        - Metropolis: $r = \frac {p(θ∗∣y)}{p(θ_{t−1}∣y)}$
+
+        - Metropolis-Hastings: $r = \frac {\frac {p(θ^*∣y)} {J_t(θ^*∣θ_{t−1})}} {\frac {p(θ_{t−1}∣y)}{J_t(θ_{t−1}∣θ^*)}}$
+
+    - Assign:
+        - $θ_t = θ^*$ \text{with probability} min⁡(r,1), ~~ θ_{t−1} \text {otherwise}$
+        
