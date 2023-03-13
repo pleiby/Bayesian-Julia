@@ -8,7 +8,7 @@ Notes on Bayesian Statistics
     - all other lines are treated as julia code.
     - lines beginning with ## are regular julia comments
 
-#### Notes from [Introduction to Bayesian statistics, part 1: The basic concepts](https://www.youtube.com/watch?v=0F0QoMCSKJ4) StataCorp
+#### Notes from [Introduction to Bayesian statistics, part 1: The basics concepts](https://www.youtube.com/watch?v=0F0QoMCSKJ4) StataCorp
 - Can calculate, from Posterior Distribution
     - 95% Equal-tail Credible Interval
     - 95% Highest Posterior Density (HPD) Interval
@@ -45,9 +45,8 @@ Notes on Bayesian Statistics
 
 - Michael Betancourt ["A Conceptual Introduction to Hamiltonian Monte Carlo", 2018, ArXiv,](https://arxiv.org/pdf/1701.02434.pdf). 
 - Radford Neal "MCMC using Hamiltonian dynamics", Chapter 5 in the "Handbook of Markov Chain Monte Carlo" by Brooks et al., 2011.
-- This video is part of a lecture course which closely follows the material covered in the book, "A Student's Guide to Bayesian Statistics", published by Sage, which is available to order on Amazon here: 
+- This video is part of a lecture course which closely follows the book, "A Student's Guide to Bayesian Statistics", Ben Lambert, published by Sage, available on Amazon 
 <https%3A%2F%2Fwww.amazon.co.uk%2FStudents-Guide-Bayesian-Statistics%2Fdp%2F1473916364>
-- For more information on all things Bayesian, have a look at:  
+- [A Student's Guide to Bayesian Statistics - Ben Lambert, playlist](https://www.youtube.com/playlist?list=PLwJRxp3blEvZ8AKMXOy0fc0cqT61GsKCG&disable_polymer=true) 75 lectures
+- For more information on all things Bayesian, have a look at website:  
 <https://ben-lambert.com/bayesian/>.
-- The playlist for the lecture course is here: 
-<https://www.youtube.com/playlist?list=PLwJRxp3blEvZ8AKMXOy0fc0cqT61GsKCG&disable_polymer=true>
