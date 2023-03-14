@@ -1239,8 +1239,8 @@ summarystats(chain)
 
 # The most important metric to take into account is the `rhat` which is a metric that measures whether the Markov chains
 # are stable and converged to a value during the total progress of the sampling procedure. It is basically the proportion
-# of variation when comparing two halves of the chains after discarding the warmups. A value of 1 implies convergence
-# and stability. By default, `rhat` must be less than 1.01 for the Bayesian estimation to be valid
+# of variation when comparing two halves of the chains after discarding the warmups. **A value of 1 implies convergence
+# and stability. By default, `rhat` must be less than 1.01 for the Bayesian estimation to be valid**
 # (Brooks & Gelman, 1998; Gelman & Rubin, 1992).
 
 # Note that all of our model's parameters have achieve a nice `ess` and, more important, `rhat` in the desired range, a solid
@@ -1321,8 +1321,8 @@ end
 
 # **First**: Before making fine adjustments to the number of chains or the number of iterations (among others ...)
 # know that Turing's NUTS sampler is very efficient and effective in exploring the most diverse and complex "crazy"
-# topologies of posteriors' target distributions. The standard arguments `NUTS()` work perfectly for 99% of cases
-# (even in complex models). That said, **most of the time when you have sampling and computational problems in your
+# topologies of posteriors' target distributions. **The standard arguments `NUTS()` work perfectly for 99% of cases
+# (even in complex models).** That said, **most of the time when you have sampling and computational problems in your
 # Bayesian model, the problem is in the model specification and not in the MCMC sampling algorithm**.
 # This is known as *Folk Theorem* (Gelman, 2008). In the words of Andrew Gelman:
 
