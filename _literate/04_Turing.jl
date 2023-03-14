@@ -99,7 +99,7 @@ f, ax, b = barplot(
 vlines!(ax, [mean(dice)]; linewidth=5, color=:red, label=L"E(\theta)")
 axislegend(ax)
 if (save_plots)
-    save(joinpath(OUTPUTPATH, "dice.svg"), f); # hide
+    save(joinpath(OUTPUTPATH, "dice.svg"), f) # hide
 else
     f
 end
@@ -248,7 +248,7 @@ f = Figure(; resolution=(800, 600))
 draw!(f[1, 1], plt1)
 draw!(f[1, 2], plt2; axis=(; ylabel="density"))
 if (save_plots)
-    save(joinpath(OUTPUTPATH, "chain.svg"), f); # hide
+    save(joinpath(OUTPUTPATH, "chain.svg"), f) # hide
 else # display locally
     f
 end
@@ -329,7 +329,7 @@ summarystats(posterior_check[:, 1:5, :]) # just the first 5 posterior samples
 # - First, specify a **model** with the macro `@model`, then 
 # - **sample from it** by specifying the **data**, **sampler** and **number of interactions**. 
 # - All **probabilistic parameters** (the ones that you've specified using `~`) will be **inferred** with a full **posterior density**. 
-# - Finally, inspect the **parameters' statistics** like **mean** and **standard deviation**, along with **convergence diagnostics** like `r_hat`. 
+# - Finally, using `summarystats()` inspect the **parameters' statistics** like **mean** and **standard deviation**, along with **convergence diagnostics** like `r_hat`. 
 #     - Conveniently, you can **plot** stuff easily if you want to. 
 # - You can also do **predictive checks** using either the **posterior** or **prior** model's distributions.
 
